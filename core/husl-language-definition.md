@@ -87,10 +87,10 @@ Key assumptions:
   interface: [rest | grpc | events]
 ```
 
-**Owned Entities:** [Entity1, Entity2]
+**Owned Entities:** [Entity1, Entity2]  
 **Referenced Entities:** [Entity1@ServiceName, Entity2@ServiceName]
 
-**Published Events:** [Event1, Event2] (if event-driven)
+**Published Events:** [Event1, Event2] (if event-driven)  
 **Subscribed Events:** [Event1, Event2] (if event-driven)
 ```
 
@@ -287,7 +287,7 @@ Type: DomainName
 
 **Format:**
 
-```markdown
+``````markdown
 ## State Machines
 
 ### [EntityName] Lifecycle
@@ -359,7 +359,7 @@ then:
   [entity] transitions to [TargetState]
   [other assertions]
 ```
-```
+``````
 
 ---
 
@@ -368,7 +368,7 @@ then:
 **Purpose:** Define business rules, authorization policies, and validation logic that apply across operations.
 
 **Format:**
-```markdown
+``````markdown
 ### [Category Name] (optional grouping)
 
 **Rule: [RuleName]**
@@ -392,7 +392,7 @@ Implementation:
 Examples:
   [Optional concrete scenarios]
 ```
-```
+``````
 
 **Rule Context Keywords:**
 - `Critical:` - Emphasizes importance or override behavior
@@ -426,7 +426,7 @@ Examples:
 
 **Format:**
 
-```markdown
+``````markdown
 ### Operation: [OperationName]
 
 **Description:** [Brief human-readable description of what this operation does]
@@ -515,7 +515,7 @@ then:
   [assertion about system state]
   ...
 ```
-```
+``````
 
 ---
 
@@ -531,7 +531,7 @@ then:
 
 **Format:**
 
-```markdown
+``````markdown
 ## Events
 
 ### Event: [EventName]
@@ -639,7 +639,7 @@ when: [JobName] runs
 then:
   [expected outcomes]
 ```
-```
+``````
 
 ---
 
@@ -758,7 +758,7 @@ All write operations (Create, Update, Delete, Apply, Remove) generate audit log 
 
 Tests use a Given/When/Then structure:
 
-```
+``````
 Test: [TestName]
 ```
 given:
@@ -778,7 +778,7 @@ then:
   no [entity] created
   [entity] unchanged
 ```
-```
+``````
 
 **Object Literal Format:**
 ```
