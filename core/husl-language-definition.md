@@ -71,17 +71,21 @@ Key assumptions:
 - [Core responsibility 2]
 
 **Dependencies:**
+```yaml
 [ServiceName]:
   purpose: [Why we depend on this service]
   operations: [Operation1, Operation2]
   data: [Entity1, Entity2]
   coupling: [sync | async | event-driven]
+```
 
 **Provides:**
+```yaml
 [ConsumerService]:
   operations: [Operation1, Operation2]
   data: [Entity1, Entity2]
   interface: [rest | grpc | events]
+```
 
 **Owned Entities:** [Entity1, Entity2]
 **Referenced Entities:** [Entity1@ServiceName, Entity2@ServiceName]
@@ -291,6 +295,7 @@ Type: DomainName
 **Description:** [Overview of the state machine and what it governs]
 
 **States:**
+```
 [StateName]:
   description: [What this state means]
   entry conditions: [How entity enters this state]
@@ -298,11 +303,13 @@ Type: DomainName
 [AnotherStateName]:
   description: [What this state means]
   entry conditions: [How entity enters this state]
+```
 
 **Initial State:** [Which state new entities start in]
 
 **State Transitions:**
 
+```
 [SourceState] → [TargetState]
   via: [OperationName] OR [Background job] OR [Event]
   conditions:
@@ -311,9 +318,11 @@ Type: DomainName
   effects:
     - [Side effect 1]
     - [Side effect 2]
+```
 
 **Allowed Operations by State:**
 
+```
 State: [StateName]
   allowed operations:
     - [Operation1]: [any special conditions or notes]
@@ -322,18 +331,24 @@ State: [StateName]
   prohibited operations:
     - [Operation3]: [why it's prohibited]
     - [Operation4]: [why it's prohibited]
+```
 
 **State-Specific Business Rules:**
 
+```
 When: [entity] is in [StateName]
   Then: [Rule or constraint that applies]
+```
 
 **Diagram (Optional):**
+```
 [ASCII art or mermaid diagram reference]
+```
 
 **Tests:**
 
 Test: [TestName]
+```
 given:
   [entity] in state [StateName]
   [other preconditions]
@@ -343,6 +358,7 @@ when: [Operation or event]
 then:
   [entity] transitions to [TargetState]
   [other assertions]
+```
 ```
 
 ---
@@ -357,6 +373,7 @@ then:
 
 **Rule: [RuleName]**
 
+```
 description: [Human-readable description]
 
 [Optional context: Critical:, Exception to:, Reasoning:, Status:, TODO:]
@@ -374,6 +391,7 @@ Implementation:
 
 Examples:
   [Optional concrete scenarios]
+```
 ```
 
 **Rule Context Keywords:**
@@ -416,7 +434,7 @@ Examples:
 **Endpoint:** [HTTP_METHOD] [/path/with/{parameters}]
 
 **Input:**
-
+```
 [Optional: Path parameters:]
   [paramName]: [Type] ([constraints], [description])
 
@@ -428,9 +446,10 @@ Examples:
 
 [Optional: Headers:]
   [headerName]: [Type] ([constraints], [description])
+```
 
 **Output:**
-
+```
 Success response:
 {
   success: true
@@ -451,6 +470,7 @@ Error response:
   [fieldName]: [Type] ([description])
   ...
 }
+```
 
 **Preconditions:**
 - [Condition 1]
@@ -481,6 +501,7 @@ Error response:
 **Tests:**
 
 Test: [TestName]
+```
 given:
   [precondition]: [value or object literal]
   [another precondition]: [value]
@@ -493,6 +514,7 @@ then:
   [object].[field] = [expected value]
   [assertion about system state]
   ...
+```
 ```
 
 ---
@@ -521,7 +543,7 @@ then:
   - Condition: [When the event fires]
 
 **Payload:**
-
+```
 {
   eventId: UUID (unique event identifier)
   eventType: string (event type name)
@@ -537,7 +559,7 @@ then:
     correlationId: UUID (for tracing)
   }
 }
-
+```
 
 **Consumers:**
 - [ServiceName]: [How they use this event]
@@ -579,7 +601,7 @@ then:
   - Selection criteria: [how to find entities to process]
 
 **Logic:**
-
+```
 For each [entity] where [condition]:
   If: [condition]
     Then: [action]
@@ -587,6 +609,7 @@ For each [entity] where [condition]:
     Then: [action]
   Otherwise:
     [default action]
+```
 
 **Side Effects:**
 - [Effect 1]
@@ -605,6 +628,7 @@ For each [entity] where [condition]:
 **Tests:**
 
 Test: [TestName]
+```
 given:
   [initial state]
   current time: [timestamp]
@@ -614,6 +638,7 @@ when: [JobName] runs
 
 then:
   [expected outcomes]
+```
 ```
 
 ---
@@ -990,6 +1015,16 @@ For large systems, consider:
 - Breaking specs into multiple files by domain/feature
 - Master spec that references sub-specs
 - Shared type definitions in common spec
+
+---
+
+## Appendix: Complete Example
+
+See the included example files:
+- `rpp_domain_crud_spec.md` - Full operation specification
+- `locks_specification.md` - Complex business rules and state machines
+- `stack.yml` - Technology stack configuration
+- `standards.yml` - Code conventions
 
 ---
 
