@@ -5,7 +5,7 @@ Generate complete, working code from a HUSL specification.
 
 ### Prompt Template
 
-```
+``````
 You are an expert code generator creating production-quality code from a Human-Understandable Specification Language (HUSL) specification.
 
 CONTEXT:
@@ -151,11 +151,11 @@ REMINDERS:
 - Include TODOs only for infrastructure not in spec (e.g., database connections)
 
 BEGIN GENERATION:
-```
+``````
 
 ### Usage Example
 
-```
+``````
 You are an expert code generator creating production-quality code from a HUSL specification.
 
 [... paste full prompt ...]
@@ -182,4 +182,4 @@ naming: {services: Service, controllers: Controller}
 ```
 
 BEGIN GENERATION:
-```
+``````
