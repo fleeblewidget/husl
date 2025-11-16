@@ -5,7 +5,7 @@ Generate comprehensive test cases from a HUSL specification.
 
 ### Prompt Template
 
-```
+``````
 You are a QA engineer generating comprehensive test cases from a Human-Understandable Specification Language (HUSL) specification.
 
 CONTEXT:
@@ -114,4 +114,4 @@ TEST GENERATION GUIDELINES:
 - Include performance tests if SLA specified
 
 BEGIN TEST GENERATION:
-```
+``````
