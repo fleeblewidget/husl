@@ -215,15 +215,15 @@ then:
 ### Authorization Check
 ```markdown
 **Preconditions:**
-- If user.role = Registrar: user.registrarId must equal entity.registrar
-- If user.role = RegistryOperator: no restriction
+- If user.role = Customer: user.id must equal order.customerId
+- If user.role = Admin: no restriction
 ```
 
 ### State-Based Operation Restriction
 ```markdown
 **Preconditions:**
-- Entity status must be Active
-- Cannot perform operation when status is Deleted/Expired
+- Order status must be Pending or Confirmed
+- Cannot cancel order when status is Shipped or Delivered
 ```
 
 ### Audit Logging (Cross-Cutting)
@@ -233,7 +233,7 @@ then:
   - operation: OPERATION_NAME
   - userId: user.id
   - details: "Description"
-  - If user.role = RegistryOperator: append ", operator={user.id}"
+  - If user.role = Admin: append ", admin={user.id}"
 ```
 
 ### Error with Code

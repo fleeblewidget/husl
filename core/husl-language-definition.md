@@ -150,22 +150,25 @@ Built-in types:
 
 **Example:**
 ```markdown
-Entity: Lock
+Entity: Order
   id: UUID (required, immutable, system-generated)
-  domainName: DomainName (required, immutable, references Domain.name)
-  type: LockType (required, immutable, determines level and who can apply)
-  statuses: List<StatusName> (required, minimum: 1, the prohibited statuses this lock applies)
-  appliedBy: User.id (required, immutable, who created the lock)
-  appliedAt: Timestamp (required, immutable, system-generated, when the lock was created)
-  removedAt: Timestamp (optional, when the lock was removed, must be after appliedAt)
-  temporaryUnlockUntil: Timestamp (optional, only if type = registryLock, when temporary unlock expires)
+  customerId: UUID (required, immutable, references Customer.id)
+  status: OrderStatus (required, current state of the order)
+  items: List<OrderItem> (required, minimum: 1, products in this order)
+  totalAmount: Money (required, total price including tax and shipping)
+  shippingAddress: Address (required, where to deliver the order)
+  createdAt: Timestamp (required, immutable, system-generated, when order was placed)
+  updatedAt: Timestamp (required, system-generated, when order was last modified)
+  shippedAt: Timestamp (optional, when order was shipped)
+  deliveredAt: Timestamp (optional, when order was delivered)
 
 Constraints:
-  - Only one lock of each type can exist per domain at a time (unique on domainName + type where removedAt is null)
-  - temporaryUnlockUntil only valid when type = registryLock
-  - If removedAt is set, removedBy must also be set
+  - totalAmount must be positive and match sum of items
+  - shippedAt must be after createdAt
+  - deliveredAt must be after shippedAt
+  - Cannot modify items after status changes to Confirmed
 
-State Machine: See Lock Lifecycle
+State Machine: See Order Lifecycle
 ```
 
 #### Enum Definitions
@@ -182,15 +185,19 @@ State Machine: See Lock Lifecycle
 
 **Example:**
 ```markdown
-LockType Enum:
-  registrarLock           - Standard client lock (level: registrar)
-  registryLock            - Premium client lock with server-level protections (level: registrar)
-  secureLock              - Standard server lock (level: registryOperator)
-  legalLock               - Legal hold lock (level: registryOperator)
+OrderStatus Enum:
+  pending              - Order placed, awaiting payment confirmation
+  confirmed            - Payment received, order confirmed
+  processing           - Order being prepared for shipment
+  shipped              - Order dispatched to customer
+  delivered            - Order successfully delivered
+  cancelled            - Order cancelled by customer or system
+  refunded             - Payment returned to customer
 
 Notes:
-  - registrarLock and registryLock can be applied by registrars
-  - All other types require RegistryOperator role
+  - Orders can only be cancelled before shipping
+  - Refunds can be partial or full
+  - Delivered orders can transition to refunded if returned
 ```
 
 #### Computed/Derived Fields
@@ -210,9 +217,10 @@ OR
 
 **Example:**
 ```markdown
-LockLevel (derived from LockType):
-  registrar → if type IN [registrarLock, registryLock]
-  registryOperator → otherwise
+ShippingMethod (derived from totalAmount and shippingAddress):
+  standard → if totalAmount < 50 AND shippingAddress.country = "domestic"
+  express → if totalAmount >= 50 OR shippingAddress.country != "domestic"
+  free → if totalAmount >= 100
 ```
 
 #### Custom Type Definitions
@@ -246,32 +254,32 @@ Type: [TypeName]
 
 **Example:**
 ```markdown
-Type: DomainName
+Type: Email
   base_type: string
-  description: A valid fully-qualified domain name
+  description: A valid email address for customer communications
   
   constraints:
     length:
-      minimum: 3
-      maximum: 255
+      minimum: 5
+      maximum: 320
     character_sets:
-      allowed: lowercase letters (a-z), digits (0-9), hyphens (-), dots (.)
-      not_allowed: spaces, uppercase, special characters
+      allowed: letters (a-z, A-Z), digits (0-9), dots (.), hyphens (-), underscores (_), @ symbol
+      not_allowed: spaces, multiple consecutive dots
     structure:
-      - cannot start with a hyphen or dot
-      - cannot end with a hyphen or dot
-      - cannot contain consecutive dots (..)
-      - must contain at least one dot (for subdomains)
+      - must contain exactly one @ symbol
+      - local part (before @) cannot start or end with a dot
+      - domain part (after @) must have at least one dot
+      - domain part must be a valid hostname
   
   examples:
-    valid: ["example.uk", "my-domain.com", "test123.co.uk"]
+    valid: ["customer@example.com", "first.last@shop.co.uk", "user+tag@store.com"]
     invalid:
-      - value: "-example.uk"
-        reason: "starts with hyphen"
-      - value: "example..uk"
-        reason: "consecutive dots"
-      - value: "EXAMPLE.UK"
-        reason: "contains uppercase"
+      - value: "user@example"
+        reason: "domain missing TLD"
+      - value: "user name@example.com"
+        reason: "contains space"
+      - value: "@example.com"
+        reason: "missing local part"
 ```
 
 ---
@@ -1015,16 +1023,6 @@ For large systems, consider:
 - Breaking specs into multiple files by domain/feature
 - Master spec that references sub-specs
 - Shared type definitions in common spec
-
----
-
-## Appendix: Complete Example
-
-See the included example files:
-- `rpp_domain_crud_spec.md` - Full operation specification
-- `locks_specification.md` - Complex business rules and state machines
-- `stack.yml` - Technology stack configuration
-- `standards.yml` - Code conventions
 
 ---
 
