@@ -76,7 +76,7 @@ Constraints:
 ```
 
 ### Operation (Simple)
-```markdown
+``````markdown
 ### Operation: [Name]
 
 **Description:** Brief description
@@ -124,10 +124,10 @@ when: Operation
 then:
   assertion = expected
 ```
-```
+``````
 
 ### Rule
-```markdown
+``````markdown
 **Rule: [Name]**
 
 ```
@@ -138,10 +138,10 @@ When: [Condition]
 
 Reasoning: Why this rule exists
 ```
-```
+``````
 
 ### State Machine
-```markdown
+``````markdown
 ### [Entity] Lifecycle
 
 **States:**
@@ -164,10 +164,10 @@ State: State1
   allowed: Op1, Op2
   prohibited: Op3 (reason)
 ```
-```
+``````
 
 ### Background Job
-```markdown
+``````markdown
 ### Job: [Name]
 
 **Description:** What it does
@@ -188,10 +188,10 @@ For each Entity where condition:
 **Side Effects:**
 - Effect 1
 - Effect 2
-```
+``````
 
 ### Test
-```markdown
+``````markdown
 Test: [Name]
 ```
 given:
@@ -206,7 +206,7 @@ then:
   entity.field = value
   collection contains item
 ```
-```
+``````
 
 ---
 
@@ -393,11 +393,11 @@ Update spec → Regenerate code → Review → Deploy
 
 ## Key Principles
 
-✓ Natural language over code syntax
-✓ Progressive detail (simple operations brief, complex detailed)
-✓ Explicit over implicit
-✓ Capture uncertainty with TODOs
-✓ Spec is source of truth
+✓ Natural language over code syntax  
+✓ Progressive detail (simple operations brief, complex detailed)  
+✓ Explicit over implicit  
+✓ Capture uncertainty with TODOs  
+✓ Spec is source of truth  
 ✓ Stack-agnostic (portable)
 
 ---
