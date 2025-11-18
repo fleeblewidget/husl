@@ -32,10 +32,24 @@ A HUSL document consists of these top-level sections:
 ## Events (optional)
 ## Background Jobs (optional)
 ## Cross-Cutting Concerns (optional)
+## Custom Implementation (optional)
 ## Edge Cases and TODOs (optional)
 ## Future Considerations (optional)
 ## Version History (optional)
 ```
+
+---
+
+## Code Generation Philosophy
+
+HUSL follows a **hybrid generation model** where:
+- The specification is the **single source of truth** for business logic
+- Generated code is the **default implementation**
+- Custom code is **preserved** in protected regions during regeneration
+
+This balances the purity of spec-driven development with the pragmatic reality that some code needs manual customization (performance optimizations, integration with legacy systems, edge cases not worth specifying).
+
+**Key Principle:** Update spec → Regenerate → Custom code preserved
 
 ---
 
@@ -87,10 +101,10 @@ Key assumptions:
   interface: [rest | grpc | events]
 ```
 
-**Owned Entities:** [Entity1, Entity2]  
+**Owned Entities:** [Entity1, Entity2]
 **Referenced Entities:** [Entity1@ServiceName, Entity2@ServiceName]
 
-**Published Events:** [Event1, Event2] (if event-driven)  
+**Published Events:** [Event1, Event2] (if event-driven)
 **Subscribed Events:** [Event1, Event2] (if event-driven)
 ```
 
@@ -726,13 +740,114 @@ All write operations (Create, Update, Delete, Apply, Remove) generate audit log 
 
 ---
 
+### Section: Custom Implementation (Optional)
+
+**Purpose:** Document where custom code can be added that will be preserved during code regeneration.
+
+**When to use:**
+- Performance-critical code that needs hand-optimization
+- Integration with legacy systems not worth modeling in spec
+- Complex algorithms better written by hand
+- Edge cases too specific to include in spec
+- Third-party library integrations
+
+**Format:**
+
+``````markdown
+## Custom Implementation
+
+### [CustomizationPoint]
+
+**Location:** [Service.method or file path]
+**Purpose:** [Why custom implementation is needed]
+**Contract:** [What inputs/outputs/behavior must be maintained]
+
+**Hook Type:** [before | after | replace | extend]
+
+**Generated Code Template:**
+```[language]
+[Show where custom region will be]
+```
+
+**Guidelines:**
+- [Guideline 1 for implementers]
+- [Guideline 2 for implementers]
+
+**Example:**
+[Show example custom implementation]
+``````
+
+**Hook Types:**
+
+- `before`: Custom code runs before generated logic
+- `after`: Custom code runs after generated logic
+- `replace`: Custom code completely replaces generated logic (contract must be maintained)
+- `extend`: Custom code adds to generated logic (e.g., additional validation)
+
+**Example:**
+
+``````markdown
+## Custom Implementation
+
+### FraudDetectionHook
+
+**Location:** OrderService.createOrder (before order confirmation)
+**Purpose:** Integration with legacy fraud detection system not modeled in spec
+**Contract:** Must return boolean (true = allow order, false = reject order)
+
+**Hook Type:** before
+
+**Generated Code Template:**
+```java
+public OperationResult<Order> createOrder(CreateOrderRequest request, User user) {
+    // Validate input
+    validateCreateOrderRequest(request);
+    
+    // CUSTOM_START: fraud_detection
+    // Custom fraud detection logic here
+    // Must set: boolean allowOrder
+    boolean allowOrder = true; // Default implementation
+    // CUSTOM_END: fraud_detection
+    
+    if (!allowOrder) {
+        return OperationResult.failure("Order rejected by fraud detection", "FRAUD_DETECTED");
+    }
+    
+    // Continue with order creation...
+}
+```
+
+**Guidelines:**
+- Fraud check must complete within 500ms (SLA requirement)
+- Log all fraud rejections for audit
+- Must handle fraud service being unavailable (fail open or closed per config)
+- Don't modify request object, only read it
+
+**Example:**
+```java
+// CUSTOM_START: fraud_detection
+FraudCheckResult result = legacyFraudService.checkOrder(
+    request.getCustomerId(),
+    request.getTotalAmount(),
+    request.getShippingAddress()
+);
+boolean allowOrder = result.isApproved();
+if (!allowOrder) {
+    auditLog.log("FRAUD_REJECTION", request.getCustomerId(), result.getReason());
+}
+// CUSTOM_END: fraud_detection
+```
+``````
+
+---
+
 ### Section: Version History (Optional)
 
 **Purpose:** Track changes to the specification over time using semantic versioning.
 
 **Format:**
 
-```markdown
+``````markdown
 ## Version History
 
 **Current Version:** [MAJOR.MINOR.PATCH]
@@ -758,7 +873,76 @@ All write operations (Create, Update, Delete, Apply, Remove) generate audit log 
 
 **Rationale:** (optional)
 [Why this change was made]
+
+**Refactoring Metadata:** (optional, for tool support)
+```yaml
+renames:
+  entities:
+    OldName: NewName
+  enums:
+    EnumName:
+      oldValue: newValue
+  fields:
+    EntityName:
+      oldFieldName: newFieldName
+    "*":  # Apply to all entities
+      oldFieldName: newFieldName
+  operations:
+    OldOperationName: NewOperationName
+
+additions:
+  EntityName:
+    - fieldName: Type (constraints)
+
+removals:
+  EntityName:
+    - fieldName
+
+modifications:
+  EntityName.fieldName:
+    old_type: OldType
+    new_type: NewType
+    reason: [Why this changed]
 ```
+``````
+
+**Example with Refactoring:**
+
+``````markdown
+### Version 2.1.0 - 2025-11-20
+
+**Type:** Minor
+
+**Changes:**
+- Renamed UserRole.RegistryOperator to UserRole.RegistryAdmin for clarity
+- Added Order.trackingNumber field for shipment tracking
+- Changed Order.notes from String to List<OrderNote> for better structure
+
+**Migration Notes:**
+- Clients checking user.role == "RegistryOperator" must update to "RegistryAdmin"
+- Order.notes is now an array; single string values will be migrated automatically
+
+**Rationale:**
+"RegistryAdmin" better reflects actual responsibilities. Tracking numbers required for new shipping integration. Structured notes enable better audit trail.
+
+**Refactoring Metadata:**
+```yaml
+renames:
+  enums:
+    UserRole:
+      registryOperator: registryAdmin
+
+additions:
+  Order:
+    - trackingNumber: String (optional, format: tracking number from carrier)
+
+modifications:
+  Order.notes:
+    old_type: String
+    new_type: List<OrderNote>
+    reason: Enable structured notes with timestamps and authors
+```
+``````
 
 ---
 
@@ -805,12 +989,12 @@ then:
 ## Language Conventions
 
 ### Naming
-- **Entities:** PascalCase (e.g., `Domain`, `Lock`, `User`)
-- **Fields:** camelCase (e.g., `domainName`, `appliedAt`, `registrarId`)
-- **Enums:** PascalCase for type, camelCase for values (e.g., `LockType`, `registrarLock`)
-- **Operations:** PascalCase (e.g., `ApplyLock`, `CreateDomain`)
-- **Rules:** PascalCase (e.g., `RegistryLockAlwaysRemovable`)
-- **Error Codes:** UPPER_SNAKE_CASE (e.g., `DOMAIN_NOT_FOUND`)
+- **Entities:** PascalCase (e.g., `Order`, `Product`, `Customer`)
+- **Fields:** camelCase (e.g., `customerId`, `createdAt`, `totalAmount`)
+- **Enums:** PascalCase for type, camelCase for values (e.g., `OrderStatus`, `pendingPayment`)
+- **Operations:** PascalCase (e.g., `CreateOrder`, `CancelOrder`)
+- **Rules:** PascalCase (e.g., `CannotCancelAfterShipping`)
+- **Error Codes:** UPPER_SNAKE_CASE (e.g., `ORDER_NOT_FOUND`)
 
 ### Comments and TODOs
 - Use `# TODO:` for inline questions in any section
@@ -892,12 +1076,38 @@ architecture:
   pattern: layered
   service_layer: required
   repository_layer: required
+
+code_generation:
+  markers:
+    generated_file_header: |
+      // GENERATED CODE - DO NOT EDIT DIRECTLY
+      // Generated from: {spec_file}
+      // Generated at: {timestamp}
+      // Generator version: {version}
+    custom_region_start: "// CUSTOM_START: {region_name}"
+    custom_region_end: "// CUSTOM_END: {region_name}"
+    custom_region_default: |
+      // CUSTOM_START: {region_name}
+      // Add custom implementation here
+      // CUSTOM_END: {region_name}
+  
+  regeneration:
+    strategy: preserve_custom_regions
+    on_conflict:
+      - create_backup  # Save existing file as .backup
+      - warn_user      # Log warning about conflicts
+      - preserve_custom  # Always keep custom regions
+    
+  protected_patterns:
+    - "// CUSTOM_START:*"  # Never overwrite between these markers
+    - "# CUSTOM_START:*"   # Language-agnostic patterns
 ```
 
 **Benefits of separation:**
 - Same spec can target Java/Spring, Python/FastAPI, TypeScript/NestJS, etc.
 - Stack upgrades are just config changes
 - Clear separation of "what" (spec) vs "how" (stack/standards)
+- Code generation behavior is explicit and configurable
 
 ---
 
@@ -965,6 +1175,252 @@ When extracting HUSL specs from existing code:
 
 ---
 
+## Code Generation Strategies
+
+### Full Regeneration
+
+```bash
+husl generate spec.husl --stack stack.yml --standards standards.yml --output src/
+```
+
+**When to use:**
+- Initial project setup
+- Major spec restructuring
+- Complete rebuilds
+- Switching technology stacks
+
+**What it does:**
+- Generates all code from scratch
+- Preserves custom regions marked with CUSTOM_START/END
+- Creates backup of existing files
+- Reports any conflicts
+
+---
+
+### Selective Regeneration
+
+```bash
+husl generate spec.husl --only CreateOrder,CancelOrder --output src/
+```
+
+**When to use:**
+- Updated specific operations in spec
+- Adding new operations
+- Modifying subset of entities
+
+**What it does:**
+- Regenerates only specified operations and their dependencies
+- Faster than full regeneration
+- Still preserves custom regions
+
+---
+
+### Incremental Update
+
+```bash
+husl update spec.husl
+```
+
+**When to use:**
+- Small spec changes (field additions, renames)
+- Documentation updates
+- Non-breaking changes
+
+**What it does:**
+- Analyzes diff between last generation and current spec
+- Updates only changed parts
+- Applies refactoring metadata from version history
+- Preserves custom code
+
+---
+
+### Diff Preview
+
+```bash
+husl diff spec.husl
+# or
+husl generate spec.husl --dry-run
+```
+
+**When to use:**
+- Before committing to regeneration
+- Validating spec changes
+- Code review preparation
+
+**What it does:**
+- Shows what would change without modifying files
+- Highlights potential conflicts with custom code
+- Estimates impact (files changed, lines added/removed)
+
+---
+
+### Refactoring Mode
+
+```bash
+husl refactor spec.husl --apply-metadata
+```
+
+**When to use:**
+- Large-scale renames (entities, fields, operations)
+- Restructuring (moving fields between entities)
+- Breaking changes with migration path
+
+**What it does:**
+- Reads refactoring metadata from version history
+- Applies systematic changes across all code
+- Much more efficient than manual find-replace
+- Updates imports, references, tests automatically
+
+**Example refactoring metadata usage:**
+
+```yaml
+# In spec version history
+renames:
+  enums:
+    UserRole:
+      registryOperator: registryAdmin
+```
+
+This single entry causes the refactoring tool to:
+- Update enum definition
+- Update all references in generated code
+- Update test files
+- Update API documentation
+- Generate migration scripts if needed
+
+---
+
+### Custom Region Preservation
+
+When regenerating code, the tool:
+
+1. **Scans existing code** for custom regions:
+   ```java
+   // CUSTOM_START: region_name
+   // ... custom code ...
+   // CUSTOM_END: region_name
+   ```
+
+2. **Extracts custom code** into memory
+
+3. **Generates new code** from spec
+
+4. **Injects custom code** back into designated regions
+
+5. **Validates** that custom code contract is maintained
+
+6. **Warns** if custom code seems incompatible with new generated code
+
+**Protected region naming convention:**
+- Use snake_case for region names
+- Be descriptive: `fraud_detection` not `custom1`
+- Region names are stable identifiers (don't change them)
+
+---
+
+### Conflict Resolution
+
+If regeneration finds issues:
+
+**Scenario 1: Custom region removed from spec**
+```
+WARNING: Custom region "legacy_integration" found in code but not in spec
+Options:
+  1. Keep custom code (add Custom Implementation section to spec)
+  2. Remove custom code (confirm deletion)
+  3. Move to separate utility file
+```
+
+**Scenario 2: Custom code signature mismatch**
+```
+ERROR: Custom region "validate_payment" has incompatible signature
+Expected: boolean validatePayment(Payment payment)
+Found: void validatePayment(String paymentId)
+
+Action required: Update custom code to match new contract
+```
+
+**Scenario 3: Multiple custom regions with same name**
+```
+ERROR: Duplicate custom region "logging" found in:
+  - OrderService.java:45
+  - OrderService.java:123
+
+Action required: Rename one region to be unique
+```
+
+---
+
+## Best Practices
+
+### DO:
+✅ Always update spec before regenerating  
+✅ Use descriptive custom region names  
+✅ Document custom regions in spec's Custom Implementation section  
+✅ Run `husl diff` before regenerating  
+✅ Keep custom regions small and focused  
+✅ Use version control (commit before regeneration)  
+✅ Write tests for custom code  
+
+### DON'T:
+❌ Edit generated code outside custom regions  
+❌ Skip spec updates and edit code directly  
+❌ Nest custom regions  
+❌ Put business logic in custom regions (put in spec instead)  
+❌ Use custom regions for "quick fixes" that should be in spec  
+❌ Rename custom region markers (breaks regeneration)  
+
+---
+
+## Migration Path: Manual Code → HUSL
+
+If you have existing code and want to adopt HUSL:
+
+**Phase 1: Extract Spec**
+```bash
+husl extract src/ --output extracted-spec.husl
+# LLM analyzes code and generates initial spec
+```
+
+**Phase 2: Review & Refine**
+- Human reviews extracted spec
+- Fixes TODOs and ambiguities
+- Adds missing business rules
+
+**Phase 3: Trial Regeneration**
+```bash
+husl generate extracted-spec.husl --output generated/ --dry-run
+diff -r src/ generated/
+```
+
+**Phase 4: Identify Custom Code**
+- Find hand-written code that can't be generated
+- Document in Custom Implementation section
+- Mark regions in existing code
+
+**Phase 5: Full Migration**
+```bash
+# Backup existing code
+cp -r src/ src.backup/
+
+# Regenerate from spec
+husl generate extracted-spec.husl --output src/
+
+# Restore custom code (marked regions)
+husl merge-custom src.backup/ src/
+```
+
+**Phase 6: Validation**
+- Run all tests
+- Compare behavior
+- Fix any issues
+
+**Phase 7: Adopt Workflow**
+- From now on: spec is source of truth
+- All changes go through spec first
+
+---
+
 ## Stack Upgrade Analysis
 
 When upgrading stack.yml versions, LLMs should generate a Stack Upgrade Report analyzing:
@@ -1024,6 +1480,5 @@ For large systems, consider:
 - Master spec that references sub-specs
 - Shared type definitions in common spec
 
----
 
 **End of HUSL Language Definition v1.0.0**

@@ -1,6 +1,6 @@
 # HUSL Quick Reference Guide
 
-A one-page reference for the Business Specification Language.
+A one-page reference for the Human-Understandable Specification Language.
 
 ---
 
@@ -47,6 +47,11 @@ A one-page reference for the Business Specification Language.
 ## Cross-Cutting Concerns            [Optional]
   - Audit logging
   - Notifications, etc.
+
+## Custom Implementation              [Optional - for hand-written code]
+  - Protected regions
+  - Integration hooks
+  - Performance optimizations
 
 ## Edge Cases and TODOs              [Optional]
 ## Future Considerations             [Optional]
@@ -281,13 +286,13 @@ Built-in:        Custom:           Collections:
 ## Naming Conventions
 
 ```
-Entities:        PascalCase      Domain, Lock
-Fields:          camelCase       domainName, createdAt
-Enums (type):    PascalCase      LockType, UserRole
-Enum values:     camelCase       registrarLock, activeStatus
-Operations:      PascalCase      CreateDomain, ApplyLock
-Rules:           PascalCase      RegistrarOwnership
-Error codes:     UPPER_SNAKE     DOMAIN_NOT_FOUND
+Entities:        PascalCase      Order, Product
+Fields:          camelCase       customerId, createdAt
+Enums (type):    PascalCase      OrderStatus, PaymentMethod
+Enum values:     camelCase       pendingPayment, creditCard
+Operations:      PascalCase      CreateOrder, CancelOrder
+Rules:           PascalCase      CannotCancelAfterShipping
+Error codes:     UPPER_SNAKE     ORDER_NOT_FOUND
 ```
 
 ---
@@ -305,6 +310,39 @@ Error codes:     UPPER_SNAKE     DOMAIN_NOT_FOUND
 **Background Jobs** → Scheduled tasks or cron jobs
 
 **Cross-Cutting Concerns** → Behavior that applies to many operations (audit, notifications)
+
+**Custom Implementation** → Hand-written code that needs to be preserved (performance optimization, legacy integrations)
+
+---
+
+## Code Generation Workflow
+
+**Full regeneration:**
+```bash
+husl generate spec.husl --output src/
+```
+
+**Selective update:**
+```bash
+husl generate spec.husl --only CreateOrder,CancelOrder
+```
+
+**Preview changes:**
+```bash
+husl diff spec.husl
+```
+
+**Apply refactoring:**
+```bash
+husl refactor spec.husl --apply-metadata
+```
+
+**Custom regions preserved automatically:**
+```java
+// CUSTOM_START: region_name
+// Your code here - preserved during regeneration
+// CUSTOM_END: region_name
+```
 
 ---
 
@@ -393,11 +431,11 @@ Update spec → Regenerate code → Review → Deploy
 
 ## Key Principles
 
-✓ Natural language over code syntax  
-✓ Progressive detail (simple operations brief, complex detailed)  
-✓ Explicit over implicit  
-✓ Capture uncertainty with TODOs  
-✓ Spec is source of truth  
+✓ Natural language over code syntax
+✓ Progressive detail (simple operations brief, complex detailed)
+✓ Explicit over implicit
+✓ Capture uncertainty with TODOs
+✓ Spec is source of truth
 ✓ Stack-agnostic (portable)
 
 ---
